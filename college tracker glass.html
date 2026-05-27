@@ -1,0 +1,2033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The College Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Space+Grotesk:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  /* ============ GLASS / DARK PREMIUM PALETTE ============ */
+  :root{
+    --bg-0:#020617;
+    --bg-1:#0f172a;
+    --bg-2:#1e293b;
+    --paper:#f1f5f9;          /* primary text */
+    --paper-2:#cbd5e1;
+    --muted:#94a3b8;
+    --muted-2:#64748b;
+    --rule:rgba(255,255,255,0.08);
+    --rule-2:rgba(255,255,255,0.05);
+
+    --accent:#a78bfa;          /* violet */
+    --accent-2:#22d3ee;         /* cyan */
+    --accent-3:#ec4899;         /* pink */
+    --gold:#fcd34d;
+
+    --ink:#f1f5f9;             /* alias for legacy refs in JS */
+    --reach:#fda4af;
+    --target:#5eead4;
+    --safety:#fcd34d;
+    --tests:#cbd5e1;
+
+    --considering:#94a3b8;
+    --applying:#fbbf24;
+    --accepted:#34d399;
+    --rejected:#f87171;
+    --waitlist:#c4b5fd;
+
+    --glass-bg:rgba(255,255,255,0.04);
+    --glass-bg-2:rgba(255,255,255,0.06);
+    --glass-border:rgba(255,255,255,0.08);
+    --glass-border-2:rgba(255,255,255,0.12);
+    --shadow:0 1px 2px rgba(0,0,0,0.3), 0 12px 30px rgba(0,0,0,0.25);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{
+    background:var(--bg-0);
+    color:var(--paper);
+    font-family:'Space Grotesk',-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 80% 60% at 0% 0%, rgba(88,28,135,0.35) 0%, transparent 50%),
+      radial-gradient(ellipse 70% 50% at 100% 0%, rgba(30,58,138,0.4) 0%, transparent 50%),
+      radial-gradient(ellipse 100% 80% at 50% 100%, rgba(15,23,42,0.6) 0%, transparent 60%),
+      #020617;
+    background-attachment:fixed;
+    position:relative;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;
+    background-image:radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size:20px 20px;opacity:0.4;z-index:0;
+  }
+  body > *{position:relative;z-index:1}
+  a{color:inherit}
+
+  /* Glass utility */
+  .glass{
+    background:var(--glass-bg);
+    border:1px solid var(--glass-border);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-radius:16px;
+    box-shadow:var(--shadow);
+  }
+
+  /* ============ HEADER ============ */
+  header.masthead{
+    padding:32px 32px 22px;
+    position:relative;
+  }
+  .masthead-top{
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:'Geist Mono',monospace;
+    font-size:10px;letter-spacing:0.2em;text-transform:uppercase;
+    color:var(--muted-2);
+    margin-bottom:14px;
+  }
+  .masthead-top .badge-live{
+    display:inline-flex;align-items:center;gap:7px;
+    background:rgba(167,139,250,0.1);
+    border:1px solid rgba(167,139,250,0.3);
+    color:#c4b5fd;
+    padding:4px 10px;
+    border-radius:100px;
+    font-size:10px;
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+  }
+  .masthead-top .badge-live::before{
+    content:"";width:6px;height:6px;border-radius:50%;
+    background:#34d399;box-shadow:0 0 8px #34d399;
+    animation:pulse 2s infinite;
+  }
+  @keyframes pulse{50%{opacity:0.5}}
+
+  h1.title{
+    font-family:'DM Serif Display','Instrument Serif',serif;
+    font-weight:400;
+    font-size:clamp(44px, 7vw, 76px);
+    line-height:0.95;
+    letter-spacing:-0.025em;
+    background:linear-gradient(180deg, #fff 0%, #c4b5fd 60%, #a78bfa 100%);
+    -webkit-background-clip:text;background-clip:text;
+    color:transparent;
+  }
+  h1.title .amp{
+    background:linear-gradient(135deg,#a78bfa 0%,#ec4899 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-style:italic;font-weight:400;
+  }
+  .subtitle{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:13px;letter-spacing:0.04em;
+    margin-top:10px;color:var(--muted);
+    font-weight:400;
+  }
+
+  /* ============ TABS ============ */
+  .toolbar{
+    display:flex;justify-content:space-between;align-items:center;
+    margin:0 32px;
+    flex-wrap:wrap;gap:12px;
+  }
+  .tabs{
+    display:flex;gap:4px;
+    padding:6px 8px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--glass-border);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-radius:100px;
+    width:fit-content;
+    box-shadow:var(--shadow);
+  }
+  .tab{
+    padding:9px 22px;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;letter-spacing:0.02em;
+    background:transparent;border:none;cursor:pointer;
+    color:var(--muted);
+    border-radius:100px;
+    transition:all 0.18s;
+    font-weight:500;
+  }
+  .tab:hover{background:rgba(255,255,255,0.06);color:var(--paper)}
+  .tab.active{
+    background:linear-gradient(135deg,#a78bfa 0%,#7c3aed 100%);
+    color:#fff;
+    box-shadow:0 4px 12px rgba(124,58,237,0.4);
+  }
+  .action-bar{
+    display:flex;gap:8px;
+    padding:6px 8px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--glass-border);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-radius:100px;
+    box-shadow:var(--shadow);
+  }
+  .action-btn{
+    padding:9px 18px;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;letter-spacing:0.02em;
+    background:transparent;border:none;cursor:pointer;
+    color:var(--paper-2);
+    border-radius:100px;
+    transition:all 0.18s;
+    font-weight:500;
+  }
+  .action-btn:hover{background:rgba(255,255,255,0.08);color:var(--paper)}
+  .action-btn.primary{
+    background:linear-gradient(135deg,#a78bfa,#7c3aed);
+    color:#fff;
+    box-shadow:0 4px 12px rgba(124,58,237,0.4);
+  }
+  .action-btn.primary:hover{transform:translateY(-1px);background:linear-gradient(135deg,#a78bfa,#7c3aed)}
+  .action-btn.ghost{color:var(--muted)}
+
+  /* ============ STATS BAR ============ */
+  .stats{
+    display:grid;grid-template-columns:repeat(6,1fr);gap:12px;
+    margin:24px 32px 0;
+  }
+  .stat{
+    background:var(--glass-bg);
+    border:1px solid var(--glass-border);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-radius:18px;
+    padding:18px 20px;
+    display:flex;flex-direction:column;gap:6px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.2);
+    transition:transform 0.2s, border-color 0.2s;
+  }
+  .stat:hover{transform:translateY(-2px);border-color:var(--glass-border-2)}
+  .stat-label{
+    font-family:'Geist Mono',monospace;
+    font-size:10px;letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--muted-2);font-weight:500;
+  }
+  .stat-value{
+    font-family:'DM Serif Display',serif;
+    font-size:34px;font-weight:400;line-height:1;
+    letter-spacing:-0.02em;
+  }
+  .stat-value.total{
+    background:linear-gradient(135deg,#fff,#c4b5fd);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .stat-value.considering{color:var(--considering)}
+  .stat-value.applying{
+    background:linear-gradient(135deg,#fbbf24,#f97316);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .stat-value.accepted{
+    background:linear-gradient(135deg,#34d399,#22d3ee);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .stat-value.rejected{color:var(--rejected)}
+  .stat-value.waitlist{color:var(--waitlist)}
+
+  /* ============ FILTERS ============ */
+  .filter-bar{
+    margin:18px 32px 0;
+    padding:16px 18px;
+    background:var(--glass-bg);
+    border:1px solid var(--glass-border);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-radius:18px;
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+    box-shadow:0 1px 3px rgba(0,0,0,0.2);
+  }
+  .filter-bar label{
+    font-family:'Geist Mono',monospace;
+    font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--muted-2);font-weight:500;
+  }
+  .filter-bar select, .filter-bar input{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:13px;
+    padding:8px 12px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--glass-border);
+    color:var(--paper);
+    cursor:pointer;
+    border-radius:10px;
+    transition:all 0.15s;
+  }
+  .filter-bar input[type="text"]{
+    min-width:240px;cursor:text;
+    font-size:13px;
+  }
+  .filter-bar input::placeholder{color:var(--muted-2)}
+  .filter-bar select:focus, .filter-bar input:focus{
+    outline:none;
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(167,139,250,0.2);
+    background:rgba(255,255,255,0.08);
+  }
+  .reset-btn{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;letter-spacing:0.02em;
+    padding:8px 14px;
+    background:linear-gradient(135deg,#a78bfa,#7c3aed);
+    color:#fff;
+    border:none;
+    cursor:pointer;font-weight:500;
+    border-radius:10px;
+    box-shadow:0 4px 12px rgba(124,58,237,0.3);
+    transition:transform 0.15s;
+  }
+  .reset-btn:hover{transform:translateY(-1px)}
+
+  /* multi-select dropdown */
+  .ms{position:relative;display:inline-block}
+  .ms-btn{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;
+    padding:8px 12px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--glass-border);
+    color:var(--paper);
+    cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;
+    min-width:140px;
+    text-align:left;
+    border-radius:10px;
+    transition:all 0.15s;
+  }
+  .ms-btn:hover{background:rgba(255,255,255,0.08);border-color:var(--glass-border-2)}
+  .ms-btn .ms-lbl{
+    font-family:'Geist Mono',monospace;
+    font-size:9px;letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--muted-2);
+  }
+  .ms-btn .ms-val{
+    font-weight:500;flex:1;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .ms-btn .ms-val.active{color:var(--accent)}
+  .ms.open .ms-btn{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(167,139,250,0.2);
+    background:rgba(255,255,255,0.08);
+  }
+  .ms-menu{
+    display:none;
+    position:absolute;top:calc(100% + 6px);left:0;
+    background:rgba(15,23,42,0.95);
+    border:1px solid var(--glass-border-2);
+    backdrop-filter:saturate(180%) blur(30px);
+    -webkit-backdrop-filter:saturate(180%) blur(30px);
+    border-radius:12px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.5);
+    min-width:200px;max-height:320px;overflow-y:auto;
+    z-index:100;
+    padding:6px;
+  }
+  .ms.open .ms-menu{display:block}
+  .ms-wide .ms-menu{
+    columns:2;column-gap:0;
+    min-width:280px;
+  }
+  .ms-opt{
+    display:flex;align-items:center;gap:8px;
+    padding:7px 10px;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;
+    cursor:pointer;
+    user-select:none;
+    break-inside:avoid;
+    border-radius:8px;
+    color:var(--paper-2);
+  }
+  .ms-opt:hover{background:rgba(255,255,255,0.06);color:var(--paper)}
+  .ms-opt.checked{background:rgba(167,139,250,0.15);color:var(--accent);font-weight:500}
+  .ms-opt input[type="checkbox"]{
+    cursor:pointer;
+    accent-color:var(--accent);
+    width:14px;height:14px;
+    flex-shrink:0;
+  }
+
+  /* ============ VIEWS ============ */
+  .view{display:none;padding:24px 32px 40px}
+  .view.active{display:block}
+
+  /* ============ TABLE ============ */
+  .table-wrap{
+    background:var(--glass-bg);
+    border:1px solid var(--glass-border);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-radius:18px;
+    overflow-x:auto;
+    box-shadow:var(--shadow);
+  }
+  table.colleges{
+    width:100%;border-collapse:collapse;
+    font-size:13px;
+  }
+  table.colleges thead{
+    background:rgba(255,255,255,0.04);
+    position:sticky;top:0;z-index:5;
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+  }
+  table.colleges th{
+    padding:14px 14px;text-align:left;
+    font-family:'Geist Mono',monospace;
+    font-size:10px;letter-spacing:0.12em;text-transform:uppercase;
+    font-weight:500;
+    color:var(--muted);
+    cursor:pointer;user-select:none;
+    border-bottom:1px solid var(--glass-border);
+    white-space:nowrap;
+    transition:color 0.15s;
+  }
+  table.colleges th:hover{color:var(--paper)}
+  table.colleges th .sort-arrow{
+    display:inline-block;margin-left:6px;opacity:0.5;
+  }
+  table.colleges th.sorted{color:var(--accent)}
+  table.colleges th.sorted .sort-arrow{opacity:1;color:var(--accent)}
+  table.colleges td{
+    padding:14px 14px;
+    border-bottom:1px solid var(--rule-2);
+    vertical-align:top;
+    color:var(--paper-2);
+  }
+  table.colleges tbody tr{transition:background 0.15s}
+  table.colleges tbody tr:hover{background:rgba(255,255,255,0.03)}
+
+  .school-name{
+    font-family:'DM Serif Display',serif;
+    font-weight:400;font-size:17px;
+    color:var(--paper);
+    cursor:pointer;
+    text-decoration:none;
+    background:linear-gradient(90deg,var(--paper),var(--paper)) no-repeat 0 100%;
+    background-size:0% 1px;
+    transition:background-size 0.25s;
+    letter-spacing:-0.01em;
+    line-height:1.15;
+  }
+  .school-name:hover{
+    background:linear-gradient(90deg,var(--accent),var(--accent-3)) no-repeat 0 100%;
+    background-size:100% 1.5px;
+    color:var(--accent);
+  }
+  .school-sub{
+    font-family:'Geist Mono',monospace;
+    font-size:10px;color:var(--muted-2);
+    margin-top:3px;letter-spacing:0.04em;
+  }
+
+  .badge{
+    display:inline-block;
+    font-family:'Geist Mono',monospace;
+    font-size:9px;letter-spacing:0.1em;text-transform:uppercase;
+    padding:3px 9px;border:1px solid;font-weight:500;
+    border-radius:100px;
+  }
+  .badge.reach{color:var(--reach);border-color:rgba(244,114,182,0.3);background:rgba(244,114,182,0.08)}
+  .badge.target{color:var(--target);border-color:rgba(45,212,191,0.3);background:rgba(45,212,191,0.08)}
+  .badge.safety{color:var(--safety);border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.08)}
+  .badge.tests{color:var(--tests);border-color:rgba(203,213,225,0.3);background:rgba(203,213,225,0.08)}
+  .badge.public{color:#7dd3fc;border-color:rgba(125,211,252,0.3);background:rgba(125,211,252,0.08)}
+  .badge.private{color:#c4b5fd;border-color:rgba(196,181,253,0.3);background:rgba(196,181,253,0.08)}
+
+  .chance-bar{
+    width:100%;max-width:80px;height:4px;
+    background:rgba(255,255,255,0.08);position:relative;margin-top:5px;
+    border-radius:2px;overflow:hidden;
+  }
+  .chance-bar-fill{
+    height:100%;
+    background:linear-gradient(90deg,#a78bfa,#ec4899);
+    border-radius:2px;
+    box-shadow:0 0 8px rgba(167,139,250,0.5);
+  }
+  .chance-num{
+    font-family:'DM Serif Display',serif;
+    font-weight:400;font-size:18px;
+    background:linear-gradient(135deg,#fff,#a78bfa);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    letter-spacing:-0.02em;
+  }
+
+  /* status select */
+  .status-select{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:11px;letter-spacing:0.02em;
+    padding:6px 10px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--glass-border);
+    color:var(--paper);
+    cursor:pointer;font-weight:500;
+    width:100%;min-width:130px;
+    border-radius:8px;
+    transition:all 0.15s;
+  }
+  .status-select option{background:#0f172a;color:var(--paper)}
+  .status-select.s-not{color:var(--muted)}
+  .status-select.s-considering{color:var(--considering);background:rgba(148,163,184,0.1)}
+  .status-select.s-applying{color:var(--applying);background:rgba(251,191,36,0.1);border-color:rgba(251,191,36,0.3)}
+  .status-select.s-applied{color:var(--accent-2);background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3)}
+  .status-select.s-accepted{color:var(--accepted);background:rgba(52,211,153,0.15);border-color:rgba(52,211,153,0.4);font-weight:600}
+  .status-select.s-rejected{color:var(--rejected);background:rgba(248,113,113,0.1);border-color:rgba(248,113,113,0.3)}
+  .status-select.s-waitlist{color:var(--waitlist);background:rgba(196,181,253,0.1);border-color:rgba(196,181,253,0.3)}
+  .status-select.s-attending{
+    background:linear-gradient(135deg,#34d399,#10b981);
+    color:#022c22;border-color:transparent;font-weight:700;
+  }
+
+  .notes-cell{min-width:200px;max-width:300px}
+  .notes-input{
+    width:100%;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;
+    padding:7px 9px;
+    background:rgba(255,255,255,0.03);
+    border:1px dashed var(--glass-border-2);
+    color:var(--paper);resize:vertical;
+    min-height:32px;
+    border-radius:8px;
+    transition:all 0.15s;
+  }
+  .notes-input:focus{
+    outline:none;
+    background:rgba(255,255,255,0.06);
+    border:1px solid var(--accent);
+    box-shadow:0 0 0 3px rgba(167,139,250,0.15);
+  }
+  .notes-input::placeholder{color:var(--muted-2);font-style:italic}
+
+  .icon-link{
+    display:inline-flex;align-items:center;gap:5px;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:11px;letter-spacing:0.01em;
+    color:var(--accent-2);
+    text-decoration:none;font-weight:500;
+    padding:2px 0;
+    transition:all 0.15s;
+  }
+  .icon-link:hover{color:var(--accent)}
+  .link-row{display:flex;flex-direction:column;gap:5px}
+
+  .row-actions{display:flex;gap:5px;flex-direction:column}
+  .row-btn{
+    font-size:13px;
+    padding:5px 9px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--glass-border);
+    color:var(--paper);
+    cursor:pointer;font-weight:500;
+    line-height:1;
+    transition:all 0.15s;
+    border-radius:8px;
+  }
+  .row-btn:hover{background:rgba(255,255,255,0.1);border-color:var(--glass-border-2)}
+  .row-btn.del-btn:hover{background:rgba(248,113,113,0.15);border-color:var(--rejected);color:var(--rejected)}
+  .row-btn.edit-btn:hover{background:rgba(167,139,250,0.15);border-color:var(--accent);color:var(--accent)}
+
+  /* ============ MAP ============ */
+  .map-wrap{
+    background:var(--glass-bg);
+    border:1px solid var(--glass-border);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-radius:18px;
+    height:calc(100vh - 380px);
+    min-height:560px;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  #map{width:100%;height:100%;background:#0f172a}
+  .leaflet-container{background:#0f172a !important;font-family:'Space Grotesk',sans-serif}
+  /* dark filter on tile layer */
+  .leaflet-tile{
+    filter:brightness(0.6) invert(1) contrast(2.5) hue-rotate(200deg) saturate(0.4) brightness(0.9);
+  }
+  .leaflet-control-attribution{
+    background:rgba(15,23,42,0.85) !important;
+    color:var(--muted) !important;
+    font-size:10px !important;
+  }
+  .leaflet-control-attribution a{color:var(--accent-2) !important}
+  .leaflet-control-zoom a{
+    background:rgba(15,23,42,0.95) !important;
+    color:var(--paper) !important;
+    border:1px solid var(--glass-border-2) !important;
+  }
+  .leaflet-control-zoom a:hover{
+    background:rgba(167,139,250,0.2) !important;
+    color:var(--accent) !important;
+  }
+  .leaflet-popup-content-wrapper{
+    border-radius:14px !important;
+    background:rgba(15,23,42,0.95) !important;
+    border:1px solid var(--glass-border-2);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    box-shadow:0 10px 40px rgba(0,0,0,0.6);
+    color:var(--paper);
+    padding:0 !important;
+  }
+  .leaflet-popup-content{margin:0 !important;padding:18px 20px !important;min-width:240px;color:var(--paper)}
+  .leaflet-popup-tip{background:rgba(15,23,42,0.95) !important}
+  .leaflet-popup-close-button{color:var(--muted) !important}
+  .popup-name{
+    font-family:'DM Serif Display',serif;
+    font-weight:400;font-size:20px;
+    line-height:1.15;margin-bottom:6px;
+    background:linear-gradient(135deg,#fff,#a78bfa);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    letter-spacing:-0.02em;
+  }
+  .popup-loc{
+    font-family:'Geist Mono',monospace;
+    font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:12px;
+  }
+  .popup-row{
+    display:flex;justify-content:space-between;
+    font-size:12px;margin-bottom:5px;
+    color:var(--paper-2);
+  }
+  .popup-row .lbl{
+    color:var(--muted-2);text-transform:uppercase;letter-spacing:0.1em;font-size:9px;
+    font-family:'Geist Mono',monospace;
+  }
+  .popup-actions{
+    display:flex;gap:6px;flex-wrap:wrap;
+    margin-top:14px;padding-top:14px;
+    border-top:1px solid var(--glass-border);
+  }
+  .popup-actions a{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:10px;letter-spacing:0.02em;
+    padding:5px 10px;
+    background:rgba(167,139,250,0.15);color:var(--accent);
+    border:1px solid rgba(167,139,250,0.3);
+    text-decoration:none;font-weight:500;
+    border-radius:8px;
+    transition:all 0.15s;
+  }
+  .popup-actions a:hover{
+    background:rgba(167,139,250,0.3);
+    border-color:var(--accent);
+  }
+
+  /* custom map markers */
+  .map-pin{
+    width:30px;height:30px;border-radius:50%;
+    border:2px solid rgba(15,23,42,0.9);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Geist Mono',monospace;
+    font-weight:600;font-size:10px;color:#fff;
+    box-shadow:0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+    transition:transform 0.15s;
+  }
+  .map-pin:hover{transform:scale(1.25)}
+  .map-pin.reach{background:linear-gradient(135deg,#f87171,#ec4899)}
+  .map-pin.target{background:linear-gradient(135deg,#34d399,#22d3ee)}
+  .map-pin.safety{background:linear-gradient(135deg,#fbbf24,#f59e0b)}
+  .map-pin.tests{background:linear-gradient(135deg,#94a3b8,#64748b)}
+  .map-pin.applying{
+    background:linear-gradient(135deg,#fbbf24,#f97316);
+    border:3px solid #fff;
+    box-shadow:0 0 0 2px #fbbf24, 0 0 16px rgba(251,191,36,0.6);
+  }
+  .map-pin.accepted{
+    background:linear-gradient(135deg,#34d399,#10b981);
+    border:3px solid #fff;
+    box-shadow:0 0 0 2px #34d399, 0 0 16px rgba(52,211,153,0.6);
+  }
+
+  .map-legend{
+    display:flex;flex-wrap:wrap;gap:18px;
+    margin-top:14px;padding:14px 18px;
+    background:var(--glass-bg);
+    border:1px solid var(--glass-border);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-radius:14px;
+    font-family:'Geist Mono',monospace;
+    font-size:10px;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--muted);
+  }
+  .legend-item{display:flex;align-items:center;gap:8px}
+  .legend-dot{
+    width:14px;height:14px;border-radius:50%;
+    border:1.5px solid rgba(15,23,42,0.9);
+    box-shadow:0 0 0 1px rgba(255,255,255,0.1);
+  }
+
+  /* ============ KANBAN ============ */
+  .kanban{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:16px;
+  }
+  .kanban-col{
+    background:var(--glass-bg);
+    border:1px solid var(--glass-border);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-radius:16px;
+    min-height:400px;
+    box-shadow:var(--shadow);
+    display:flex;flex-direction:column;
+    overflow:hidden;
+  }
+  .kanban-head{
+    padding:14px 16px;
+    border-bottom:1px solid var(--glass-border);
+    background:rgba(255,255,255,0.03);
+    font-family:'Geist Mono',monospace;
+    font-size:10px;letter-spacing:0.12em;text-transform:uppercase;
+    font-weight:500;color:var(--paper);
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .kanban-head .count{
+    background:rgba(167,139,250,0.2);
+    color:var(--accent);
+    border:1px solid rgba(167,139,250,0.3);
+    padding:2px 9px;font-size:10px;font-weight:600;
+    border-radius:100px;
+  }
+  .kanban-body{padding:12px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .k-card{
+    padding:12px 14px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--glass-border);
+    border-radius:12px;
+    cursor:pointer;
+    transition:all 0.18s;
+  }
+  .k-card:hover{
+    background:rgba(255,255,255,0.07);
+    border-color:rgba(167,139,250,0.4);
+    transform:translateY(-2px);
+    box-shadow:0 8px 16px rgba(0,0,0,0.3);
+  }
+  .k-name{
+    font-family:'DM Serif Display',serif;
+    font-weight:400;font-size:15px;line-height:1.2;
+    color:var(--paper);
+    letter-spacing:-0.01em;
+  }
+  .k-meta{
+    font-family:'Geist Mono',monospace;
+    font-size:9px;letter-spacing:0.08em;
+    color:var(--muted-2);margin-top:5px;
+    display:flex;gap:7px;flex-wrap:wrap;
+  }
+  .k-empty{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;color:var(--muted-2);
+    text-align:center;padding:32px 12px;
+    font-style:italic;
+  }
+
+  /* ============ DETAIL MODAL ============ */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;
+    background:rgba(2,6,23,0.75);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    z-index:1000;
+    align-items:center;justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.open{display:flex}
+  .modal{
+    background:rgba(15,23,42,0.95);
+    border:1px solid var(--glass-border-2);
+    backdrop-filter:saturate(180%) blur(30px);
+    -webkit-backdrop-filter:saturate(180%) blur(30px);
+    border-radius:22px;
+    box-shadow:0 25px 70px rgba(0,0,0,0.6);
+    max-width:600px;width:100%;
+    max-height:90vh;overflow-y:auto;
+    color:var(--paper);
+  }
+  .modal-head{
+    padding:24px 28px 20px;
+    border-bottom:1px solid var(--glass-border);
+    position:relative;
+  }
+  .modal-name{
+    font-family:'DM Serif Display',serif;
+    font-weight:400;font-size:32px;
+    line-height:1.05;letter-spacing:-0.02em;
+    background:linear-gradient(135deg,#fff,#a78bfa);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .modal-loc{
+    font-family:'Geist Mono',monospace;
+    font-size:11px;letter-spacing:0.15em;text-transform:uppercase;
+    color:var(--muted);margin-top:8px;
+  }
+  .close-btn{
+    position:absolute;top:18px;right:18px;
+    width:32px;height:32px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--glass-border);
+    color:var(--paper);
+    cursor:pointer;font-size:16px;font-weight:500;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:8px;
+    transition:all 0.15s;
+  }
+  .close-btn:hover{background:rgba(255,255,255,0.1);color:var(--accent)}
+  .modal-body{padding:24px 28px}
+  .modal-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:14px;
+    margin-bottom:20px;
+  }
+  .modal-field{
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--glass-border);
+    padding:12px 14px;
+    border-radius:12px;
+  }
+  .modal-field .lbl{
+    font-family:'Geist Mono',monospace;
+    font-size:9px;letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--muted-2);margin-bottom:5px;font-weight:500;
+  }
+  .modal-field .val{
+    font-family:'DM Serif Display',serif;
+    font-size:18px;font-weight:400;
+    color:var(--paper);
+    letter-spacing:-0.01em;
+  }
+  .modal-section-title{
+    font-family:'Geist Mono',monospace;
+    font-size:10px;letter-spacing:0.15em;text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:10px;
+    font-weight:500;
+  }
+  .modal-actions{
+    display:flex;gap:8px;flex-wrap:wrap;
+    margin-top:8px;
+  }
+  .modal-actions a{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:11px;letter-spacing:0.02em;
+    padding:9px 14px;
+    background:linear-gradient(135deg,#a78bfa,#7c3aed);
+    color:#fff;
+    text-decoration:none;font-weight:500;
+    border-radius:10px;
+    border:none;
+    transition:transform 0.15s;
+    box-shadow:0 4px 10px rgba(124,58,237,0.3);
+  }
+  .modal-actions a:hover{transform:translateY(-1px)}
+  .modal-actions a.alt{
+    background:rgba(255,255,255,0.05);
+    color:var(--paper);
+    border:1px solid var(--glass-border);
+    box-shadow:none;
+  }
+  .modal-actions a.alt:hover{
+    background:rgba(255,255,255,0.1);
+    border-color:var(--glass-border-2);
+  }
+
+  .modal-notes{
+    width:100%;min-height:90px;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14px;line-height:1.5;
+    padding:12px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--glass-border);
+    color:var(--paper);
+    resize:vertical;
+    border-radius:12px;
+  }
+  .modal-notes:focus{
+    outline:none;
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(167,139,250,0.15);
+    background:rgba(255,255,255,0.05);
+  }
+
+  /* edit form fields in modal */
+  .edit-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+  .edit-form .full{grid-column:1/-1}
+  .edit-form label{
+    font-family:'Geist Mono',monospace;
+    font-size:9px;letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--muted-2);margin-bottom:5px;display:block;font-weight:500;
+  }
+  .edit-form input, .edit-form select{
+    width:100%;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14px;
+    padding:9px 12px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--glass-border);
+    color:var(--paper);
+    border-radius:10px;
+    transition:all 0.15s;
+  }
+  .edit-form input::placeholder{color:var(--muted-2)}
+  .edit-form select option{background:#0f172a;color:var(--paper)}
+  .edit-form input:focus, .edit-form select:focus{
+    outline:none;
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(167,139,250,0.15);
+    background:rgba(255,255,255,0.08);
+  }
+  .edit-form .help{
+    font-family:'Geist Mono',monospace;
+    font-size:9px;color:var(--muted-2);margin-top:4px;letter-spacing:0.04em;
+  }
+  .edit-actions{
+    display:flex;gap:8px;justify-content:flex-end;
+    margin-top:18px;padding-top:14px;
+    border-top:1px solid var(--glass-border);
+  }
+  .edit-actions button{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;letter-spacing:0.02em;
+    padding:10px 18px;
+    cursor:pointer;font-weight:500;
+    border-radius:10px;
+    transition:all 0.15s;
+    border:none;
+  }
+  .edit-actions .save{
+    background:linear-gradient(135deg,#a78bfa,#7c3aed);
+    color:#fff;
+    box-shadow:0 4px 12px rgba(124,58,237,0.3);
+  }
+  .edit-actions .save:hover{transform:translateY(-1px)}
+  .edit-actions .cancel{
+    background:rgba(255,255,255,0.05);
+    color:var(--paper);
+    border:1px solid var(--glass-border);
+  }
+  .edit-actions .cancel:hover{
+    background:rgba(255,255,255,0.1);
+  }
+
+  .modal.editing .view-mode{display:none}
+  .modal:not(.editing) .edit-mode{display:none}
+
+  /* ============ EXPORT BAR ============ */
+  .export-bar{
+    display:flex;gap:8px;align-items:center;
+  }
+  .export-btn{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;letter-spacing:0.02em;
+    padding:8px 14px;
+    background:rgba(255,255,255,0.05);
+    color:var(--paper);
+    border:1px solid var(--glass-border);
+    cursor:pointer;font-weight:500;
+    border-radius:10px;
+    transition:all 0.15s;
+  }
+  .export-btn:hover{
+    background:rgba(255,255,255,0.1);
+    border-color:var(--glass-border-2);
+  }
+
+  /* dark scrollbars */
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-track{background:rgba(255,255,255,0.02)}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:5px}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(167,139,250,0.3)}
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 900px){
+    .stats{grid-template-columns:repeat(3,1fr);margin:18px 18px 0}
+    .kanban{grid-template-columns:1fr}
+    .modal-grid{grid-template-columns:1fr}
+    h1.title{font-size:48px}
+    .view{padding:18px}
+    header.masthead{padding:20px 18px}
+    .filter-bar{margin:14px 18px 0;padding:14px}
+    .tabs{margin:0 18px;overflow-x:auto;max-width:calc(100% - 36px)}
+    .tab{padding:9px 14px;font-size:11px;white-space:nowrap}
+  }
+
+  /* hidden util */
+  .hidden{display:none !important}
+</style>
+
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-top">
+    <span>Class of 2026 · College Tracker</span>
+    <span class="badge-live">Live · Auto-saved</span>
+    <span id="dateStamp"></span>
+  </div>
+  <h1 class="title">The college <span class="amp">atlas</span></h1>
+  <div class="subtitle">A working dashboard for considering, applying, and getting in.</div>
+</header>
+
+<div class="toolbar">
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-view="list">List</button>
+    <button class="tab" data-view="board">Board</button>
+    <button class="tab" data-view="map">Map</button>
+  </nav>
+  <div class="action-bar">
+    <button class="action-btn primary" id="addBtn" title="Add a new school">+ Add School</button>
+    <button class="action-btn" id="exportBtn" title="Download your tracker as JSON">Export</button>
+    <button class="action-btn ghost" id="resetAllBtn" title="Clear all status & notes">Reset</button>
+  </div>
+</div>
+
+<section class="stats" id="statsBar">
+  <div class="stat"><span class="stat-label">Total Schools</span><span class="stat-value total" id="stTotal">0</span></div>
+  <div class="stat"><span class="stat-label">Considering</span><span class="stat-value considering" id="stConsidering">0</span></div>
+  <div class="stat"><span class="stat-label">Applying / Applied</span><span class="stat-value applying" id="stApplying">0</span></div>
+  <div class="stat"><span class="stat-label">Accepted</span><span class="stat-value accepted" id="stAccepted">0</span></div>
+  <div class="stat"><span class="stat-label">Waitlisted</span><span class="stat-value waitlist" id="stWaitlist">0</span></div>
+  <div class="stat"><span class="stat-label">Rejected</span><span class="stat-value rejected" id="stRejected">0</span></div>
+</section>
+
+<section class="filter-bar">
+  <label for="search">Search:</label>
+  <input type="text" id="search" placeholder="School, city, state…" />
+
+  <div class="ms" data-filter="category">
+    <button class="ms-btn"><span class="ms-lbl">Category:</span> <span class="ms-val">All</span> ▾</button>
+    <div class="ms-menu">
+      <div class="ms-opt" data-val="Reach"><input type="checkbox"> Reach</div>
+      <div class="ms-opt" data-val="Target"><input type="checkbox"> Target</div>
+      <div class="ms-opt" data-val="Safety"><input type="checkbox"> Safety</div>
+      <div class="ms-opt" data-val="Tests Required"><input type="checkbox"> Tests Required</div>
+    </div>
+  </div>
+
+  <div class="ms" data-filter="status">
+    <button class="ms-btn"><span class="ms-lbl">Status:</span> <span class="ms-val">All</span> ▾</button>
+    <div class="ms-menu">
+      <div class="ms-opt" data-val="not"><input type="checkbox"> Not Started</div>
+      <div class="ms-opt" data-val="considering"><input type="checkbox"> Considering</div>
+      <div class="ms-opt" data-val="applying"><input type="checkbox"> Applying</div>
+      <div class="ms-opt" data-val="applied"><input type="checkbox"> Applied</div>
+      <div class="ms-opt" data-val="accepted"><input type="checkbox"> Accepted</div>
+      <div class="ms-opt" data-val="rejected"><input type="checkbox"> Rejected</div>
+      <div class="ms-opt" data-val="waitlist"><input type="checkbox"> Waitlisted</div>
+      <div class="ms-opt" data-val="attending"><input type="checkbox"> Attending</div>
+    </div>
+  </div>
+
+  <div class="ms" data-filter="type">
+    <button class="ms-btn"><span class="ms-lbl">Type:</span> <span class="ms-val">All</span> ▾</button>
+    <div class="ms-menu">
+      <div class="ms-opt" data-val="Public"><input type="checkbox"> Public</div>
+      <div class="ms-opt" data-val="Private"><input type="checkbox"> Private</div>
+    </div>
+  </div>
+
+  <div class="ms ms-wide" data-filter="state">
+    <button class="ms-btn"><span class="ms-lbl">State:</span> <span class="ms-val">All</span> ▾</button>
+    <div class="ms-menu" id="stateMenu"></div>
+  </div>
+
+  <div class="ms" data-filter="size">
+    <button class="ms-btn"><span class="ms-lbl">Size:</span> <span class="ms-val">All</span> ▾</button>
+    <div class="ms-menu">
+      <div class="ms-opt" data-val="Small"><input type="checkbox"> Small (&lt;5k)</div>
+      <div class="ms-opt" data-val="Medium"><input type="checkbox"> Medium (5k–15k)</div>
+      <div class="ms-opt" data-val="Large"><input type="checkbox"> Large (&gt;15k)</div>
+    </div>
+  </div>
+
+  <button class="reset-btn" id="resetFiltersBtn">Reset Filters</button>
+  <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)" id="resultCount"></span>
+</section>
+
+<!-- LIST VIEW -->
+<section class="view active" id="view-list">
+  <div class="table-wrap">
+    <table class="colleges">
+      <thead>
+        <tr>
+          <th data-sort="name">School<span class="sort-arrow">↕</span></th>
+          <th data-sort="category">Category<span class="sort-arrow">↕</span></th>
+          <th data-sort="chance">Chance<span class="sort-arrow">↕</span></th>
+          <th data-sort="state">Location<span class="sort-arrow">↕</span></th>
+          <th data-sort="type">Type<span class="sort-arrow">↕</span></th>
+          <th data-sort="size">Size<span class="sort-arrow">↕</span></th>
+          <th data-sort="reputation">Reputation<span class="sort-arrow">↕</span></th>
+          <th>Status</th>
+          <th>Notes</th>
+          <th>Links</th>
+          <th>Edit</th>
+        </tr>
+      </thead>
+      <tbody id="collegeBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- BOARD VIEW -->
+<section class="view" id="view-board">
+  <div class="kanban" id="kanbanBoard"></div>
+</section>
+
+<!-- MAP VIEW -->
+<section class="view" id="view-map">
+  <div class="map-wrap"><div id="map"></div></div>
+  <div class="map-legend">
+    <div class="legend-item"><span class="legend-dot" style="background:var(--reach)"></span>Reach</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--target)"></span>Target</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--safety)"></span>Safety</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--tests)"></span>Tests Required</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--applying);border:2px solid var(--ink)"></span>Applying / Applied (override)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--accepted);border:2px solid var(--ink)"></span>Accepted (override)</div>
+  </div>
+</section>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" id="modalEl">
+    <div class="modal-head">
+      <button class="close-btn" id="modalClose">×</button>
+      <div class="view-mode">
+        <div class="modal-name" id="mName"></div>
+        <div class="modal-loc" id="mLoc"></div>
+      </div>
+      <div class="edit-mode">
+        <div class="modal-name" id="mEditTitle">Edit School</div>
+        <div class="modal-loc">All fields below can be updated and will save to your tracker.</div>
+      </div>
+    </div>
+
+    <!-- VIEW MODE BODY -->
+    <div class="modal-body view-mode">
+      <div class="modal-grid">
+        <div class="modal-field"><div class="lbl">Category</div><div class="val" id="mCat"></div></div>
+        <div class="modal-field"><div class="lbl">Admit Chance</div><div class="val" id="mChance"></div></div>
+        <div class="modal-field"><div class="lbl">Type</div><div class="val" id="mType"></div></div>
+        <div class="modal-field"><div class="lbl">Approx. Size</div><div class="val" id="mSize"></div></div>
+        <div class="modal-field"><div class="lbl">Reputation</div><div class="val" id="mRep"></div></div>
+        <div class="modal-field"><div class="lbl">Status</div><div class="val" id="mStat"></div></div>
+      </div>
+
+      <div class="modal-section-title">Notes</div>
+      <textarea class="modal-notes" id="mNotes" placeholder="Visit dates, deadlines, what you liked, follow-ups..."></textarea>
+
+      <div class="modal-section-title" style="margin-top:18px">Explore the Campus</div>
+      <div class="modal-actions" id="mActions"></div>
+
+      <div class="edit-actions">
+        <button class="cancel" id="editFromViewBtn" style="background:var(--accent);color:var(--paper);border-color:var(--accent)">✏ Edit Details</button>
+      </div>
+    </div>
+
+    <!-- EDIT MODE BODY -->
+    <div class="modal-body edit-mode">
+      <div class="edit-form">
+        <div class="full">
+          <label>School Name *</label>
+          <input type="text" id="eName" placeholder="e.g. Boston University" />
+        </div>
+        <div>
+          <label>City *</label>
+          <input type="text" id="eCity" placeholder="e.g. Boston" />
+        </div>
+        <div>
+          <label>State *</label>
+          <input type="text" id="eState" placeholder="e.g. MA" maxlength="2" />
+          <div class="help">2-letter abbreviation</div>
+        </div>
+        <div>
+          <label>Category *</label>
+          <select id="eCategory">
+            <option value="Reach">Reach</option>
+            <option value="Target">Target</option>
+            <option value="Safety">Safety</option>
+            <option value="Tests Required">Tests Required</option>
+          </select>
+        </div>
+        <div>
+          <label>Admit Chance (0–100)</label>
+          <input type="number" id="eChance" min="0" max="100" placeholder="50" />
+          <div class="help">Your estimated % chance of admission</div>
+        </div>
+        <div>
+          <label>Type</label>
+          <select id="eType">
+            <option value="Public">Public</option>
+            <option value="Private">Private</option>
+          </select>
+        </div>
+        <div>
+          <label>Undergrad Size</label>
+          <input type="number" id="eSize" min="0" placeholder="e.g. 12000" />
+          <div class="help">Approx. enrollment</div>
+        </div>
+        <div class="full">
+          <label>Reputation / Tier</label>
+          <input type="text" id="eReputation" placeholder="e.g. Strong Research, Elite Liberal Arts, etc." />
+        </div>
+        <div>
+          <label>Latitude</label>
+          <input type="number" id="eLat" step="0.0001" placeholder="42.3505" />
+          <div class="help">For map (optional)</div>
+        </div>
+        <div>
+          <label>Longitude</label>
+          <input type="number" id="eLng" step="0.0001" placeholder="-71.1054" />
+          <div class="help">For map (optional)</div>
+        </div>
+      </div>
+      <div class="edit-actions">
+        <button class="cancel" id="editCancelBtn">Cancel</button>
+        <button class="save" id="editSaveBtn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   COLLEGE DATA — sourced from CollegeVine list, augmented with rough
+   undergrad enrollment estimates, reputation tier (heuristic), and
+   coordinates for the map. Edit any field freely.
+   ===================================================================== */
+const COLLEGES = [
+  // ---------- REACH ----------
+  {name:"University of Miami", city:"Coral Gables", state:"FL", type:"Private", category:"Reach", chance:25, size:12500, sizeBand:"Medium", reputation:"Highly Selective", lat:25.7218, lng:-80.2793},
+  {name:"Davidson College", city:"Davidson", state:"NC", type:"Private", category:"Reach", chance:24, size:1900, sizeBand:"Small", reputation:"Elite Liberal Arts", lat:35.4993, lng:-80.8487},
+  {name:"Wesleyan University", city:"Middletown", state:"CT", type:"Private", category:"Reach", chance:23, size:3200, sizeBand:"Small", reputation:"Elite Liberal Arts", lat:41.5559, lng:-72.6571},
+  {name:"William & Mary", city:"Williamsburg", state:"VA", type:"Public", category:"Reach", chance:23, size:6800, sizeBand:"Medium", reputation:"Public Ivy", lat:37.2707, lng:-76.7075},
+  {name:"Boston University", city:"Boston", state:"MA", type:"Private", category:"Reach", chance:20, size:18500, sizeBand:"Large", reputation:"Highly Selective", lat:42.3505, lng:-71.1054},
+  {name:"Babson College", city:"Babson Park", state:"MA", type:"Private", category:"Reach", chance:19, size:2600, sizeBand:"Small", reputation:"Top Business", lat:42.2974, lng:-71.2647},
+  {name:"Villanova University", city:"Villanova", state:"PA", type:"Private", category:"Reach", chance:19, size:7100, sizeBand:"Medium", reputation:"Highly Selective", lat:40.0367, lng:-75.3422},
+  {name:"Tulane University", city:"New Orleans", state:"LA", type:"Private", category:"Reach", chance:18, size:8800, sizeBand:"Medium", reputation:"Highly Selective", lat:29.9404, lng:-90.1208},
+  {name:"University of Michigan", city:"Ann Arbor", state:"MI", type:"Public", category:"Reach", chance:15, size:32000, sizeBand:"Large", reputation:"Public Ivy", lat:42.2780, lng:-83.7382},
+  {name:"University of North Carolina at Chapel Hill", city:"Chapel Hill", state:"NC", type:"Public", category:"Reach", chance:15, size:19500, sizeBand:"Large", reputation:"Public Ivy", lat:35.9049, lng:-79.0469},
+  {name:"University of Southern California", city:"Los Angeles", state:"CA", type:"Private", category:"Reach", chance:14, size:20000, sizeBand:"Large", reputation:"Elite Research", lat:34.0224, lng:-118.2851},
+  {name:"Colorado College", city:"Colorado Springs", state:"CO", type:"Private", category:"Reach", chance:14, size:2100, sizeBand:"Small", reputation:"Elite Liberal Arts", lat:38.8483, lng:-104.8197},
+  {name:"New York University", city:"New York", state:"NY", type:"Private", category:"Reach", chance:14, size:27000, sizeBand:"Large", reputation:"Elite Research", lat:40.7295, lng:-73.9965},
+  {name:"Colgate University", city:"Hamilton", state:"NY", type:"Private", category:"Reach", chance:13, size:3100, sizeBand:"Small", reputation:"Elite Liberal Arts", lat:42.8181, lng:-75.5377},
+  {name:"Emory University", city:"Atlanta", state:"GA", type:"Private", category:"Reach", chance:12, size:7100, sizeBand:"Medium", reputation:"Elite Research", lat:33.7925, lng:-84.3245},
+  {name:"University of Virginia", city:"Charlottesville", state:"VA", type:"Public", category:"Reach", chance:11, size:17500, sizeBand:"Large", reputation:"Public Ivy", lat:38.0336, lng:-78.5080},
+  {name:"University of Notre Dame", city:"Notre Dame", state:"IN", type:"Private", category:"Reach", chance:6, size:8900, sizeBand:"Medium", reputation:"Elite Research", lat:41.7036, lng:-86.2390},
+  {name:"University of Chicago", city:"Chicago", state:"IL", type:"Private", category:"Reach", chance:6, size:7500, sizeBand:"Medium", reputation:"Elite Research", lat:41.7886, lng:-87.5987},
+  {name:"Johns Hopkins University", city:"Baltimore", state:"MD", type:"Private", category:"Reach", chance:6, size:5500, sizeBand:"Medium", reputation:"Elite Research", lat:39.3299, lng:-76.6205},
+  {name:"Stanford University", city:"Stanford", state:"CA", type:"Private", category:"Reach", chance:5, size:7800, sizeBand:"Medium", reputation:"Elite Research", lat:37.4275, lng:-122.1697},
+  {name:"Rice University", city:"Houston", state:"TX", type:"Private", category:"Reach", chance:3, size:4500, sizeBand:"Small", reputation:"Elite Research", lat:29.7174, lng:-95.4018},
+
+  // ---------- TARGET ----------
+  {name:"University of Connecticut", city:"Storrs", state:"CT", type:"Public", category:"Target", chance:79, size:19000, sizeBand:"Large", reputation:"Strong Research", lat:41.8077, lng:-72.2540},
+  {name:"University of San Diego", city:"San Diego", state:"CA", type:"Private", category:"Target", chance:75, size:5800, sizeBand:"Medium", reputation:"Solid Regional", lat:32.7714, lng:-117.1898},
+  {name:"Worcester Polytechnic Institute", city:"Worcester", state:"MA", type:"Private", category:"Target", chance:75, size:5200, sizeBand:"Medium", reputation:"Top STEM", lat:42.2742, lng:-71.8061},
+  {name:"Virginia Tech", city:"Blacksburg", state:"VA", type:"Public", category:"Target", chance:72, size:30000, sizeBand:"Large", reputation:"Strong Research", lat:37.2284, lng:-80.4234},
+  {name:"San Diego State University", city:"San Diego", state:"CA", type:"Public", category:"Target", chance:72, size:31000, sizeBand:"Large", reputation:"Solid Regional", lat:32.7757, lng:-117.0719},
+  {name:"Morehouse College", city:"Atlanta", state:"GA", type:"Private", category:"Target", chance:71, size:2200, sizeBand:"Small", reputation:"Historic HBCU", lat:33.7456, lng:-84.4136},
+  {name:"Syracuse University", city:"Syracuse", state:"NY", type:"Private", category:"Target", chance:71, size:15000, sizeBand:"Large", reputation:"Strong Research", lat:43.0392, lng:-76.1351},
+  {name:"Southern Methodist University", city:"Dallas", state:"TX", type:"Private", category:"Target", chance:71, size:7100, sizeBand:"Medium", reputation:"Strong Research", lat:32.8412, lng:-96.7845},
+  {name:"North Carolina State University", city:"Raleigh", state:"NC", type:"Public", category:"Target", chance:70, size:26500, sizeBand:"Large", reputation:"Strong Research", lat:35.7847, lng:-78.6821},
+  {name:"Ohio State University", city:"Columbus", state:"OH", type:"Public", category:"Target", chance:69, size:46000, sizeBand:"Large", reputation:"Strong Research", lat:40.0061, lng:-83.0283},
+  {name:"George Washington University", city:"Washington", state:"DC", type:"Private", category:"Target", chance:68, size:12000, sizeBand:"Medium", reputation:"Strong Research", lat:38.8997, lng:-77.0480},
+  {name:"Illinois Institute of Technology", city:"Chicago", state:"IL", type:"Private", category:"Target", chance:66, size:3200, sizeBand:"Small", reputation:"STEM Focused", lat:41.8350, lng:-87.6270},
+  {name:"Baylor University", city:"Waco", state:"TX", type:"Private", category:"Target", chance:63, size:15000, sizeBand:"Large", reputation:"Strong Research", lat:31.5489, lng:-97.1131},
+  {name:"University of Washington", city:"Seattle", state:"WA", type:"Public", category:"Target", chance:62, size:36000, sizeBand:"Large", reputation:"Public Ivy", lat:47.6553, lng:-122.3035},
+  {name:"University of Rochester", city:"Rochester", state:"NY", type:"Private", category:"Target", chance:51, size:6800, sizeBand:"Medium", reputation:"Strong Research", lat:43.1283, lng:-77.6286},
+  {name:"Connecticut College", city:"New London", state:"CT", type:"Private", category:"Target", chance:50, size:1900, sizeBand:"Small", reputation:"Solid Liberal Arts", lat:41.3782, lng:-72.1054},
+  {name:"Lafayette College", city:"Easton", state:"PA", type:"Private", category:"Target", chance:50, size:2700, sizeBand:"Small", reputation:"Solid Liberal Arts", lat:40.6997, lng:-75.2076},
+  {name:"University of Pittsburgh", city:"Pittsburgh", state:"PA", type:"Public", category:"Target", chance:48, size:20000, sizeBand:"Large", reputation:"Strong Research", lat:40.4444, lng:-79.9608},
+  {name:"University of Wisconsin-Madison", city:"Madison", state:"WI", type:"Public", category:"Target", chance:48, size:35000, sizeBand:"Large", reputation:"Public Ivy", lat:43.0766, lng:-89.4125},
+  {name:"Grambling State University", city:"Grambling", state:"LA", type:"Public", category:"Target", chance:47, size:5000, sizeBand:"Medium", reputation:"Historic HBCU", lat:32.5246, lng:-92.7140},
+  {name:"American University", city:"Washington", state:"DC", type:"Private", category:"Target", chance:47, size:7900, sizeBand:"Medium", reputation:"Strong Research", lat:38.9375, lng:-77.0903},
+  {name:"University of Texas at Austin", city:"Austin", state:"TX", type:"Public", category:"Target", chance:46, size:42000, sizeBand:"Large", reputation:"Public Ivy", lat:30.2849, lng:-97.7341},
+  {name:"Clemson University", city:"Clemson", state:"SC", type:"Public", category:"Target", chance:45, size:22000, sizeBand:"Large", reputation:"Strong Research", lat:34.6788, lng:-82.8419},
+  {name:"University of Maryland, College Park", city:"College Park", state:"MD", type:"Public", category:"Target", chance:43, size:30000, sizeBand:"Large", reputation:"Public Ivy", lat:38.9869, lng:-76.9426},
+  {name:"University of Illinois at Urbana–Champaign", city:"Champaign", state:"IL", type:"Public", category:"Target", chance:43, size:34000, sizeBand:"Large", reputation:"Public Ivy", lat:40.1020, lng:-88.2272},
+  {name:"Lehigh University", city:"Bethlehem", state:"PA", type:"Private", category:"Target", chance:42, size:5700, sizeBand:"Medium", reputation:"Strong Research", lat:40.6063, lng:-75.3753},
+  {name:"Auburn University", city:"Auburn", state:"AL", type:"Public", category:"Target", chance:37, size:25000, sizeBand:"Large", reputation:"Strong Research", lat:32.6034, lng:-85.4878},
+  {name:"United States Coast Guard Academy", city:"New London", state:"CT", type:"Public", category:"Target", chance:36, size:1100, sizeBand:"Small", reputation:"Service Academy", lat:41.3717, lng:-72.0989},
+  {name:"Skidmore College", city:"Saratoga Springs", state:"NY", type:"Private", category:"Target", chance:35, size:2700, sizeBand:"Small", reputation:"Solid Liberal Arts", lat:43.0961, lng:-73.7878},
+  {name:"University of Richmond", city:"Richmond", state:"VA", type:"Private", category:"Target", chance:32, size:3100, sizeBand:"Small", reputation:"Solid Liberal Arts", lat:37.5749, lng:-77.5380},
+  {name:"Pitzer College", city:"Claremont", state:"CA", type:"Private", category:"Target", chance:27, size:1100, sizeBand:"Small", reputation:"Elite Liberal Arts", lat:34.1031, lng:-117.7053},
+
+  // ---------- SAFETY ----------
+  {name:"University of Nebraska–Lincoln", city:"Lincoln", state:"NE", type:"Public", category:"Safety", chance:100, size:20000, sizeBand:"Large", reputation:"Strong Research", lat:40.8202, lng:-96.7005},
+  {name:"Arizona State University", city:"Tempe", state:"AZ", type:"Public", category:"Safety", chance:100, size:65000, sizeBand:"Large", reputation:"Strong Research", lat:33.4242, lng:-111.9281},
+  {name:"Washington State University", city:"Pullman", state:"WA", type:"Public", category:"Safety", chance:100, size:19000, sizeBand:"Large", reputation:"Strong Research", lat:46.7319, lng:-117.1542},
+  {name:"Wentworth Institute of Technology", city:"Boston", state:"MA", type:"Private", category:"Safety", chance:98, size:3700, sizeBand:"Small", reputation:"STEM Focused", lat:42.3367, lng:-71.0950},
+  {name:"Portland State University", city:"Portland", state:"OR", type:"Public", category:"Safety", chance:98, size:18000, sizeBand:"Large", reputation:"Solid Regional", lat:45.5113, lng:-122.6857},
+  {name:"Southern Oregon University", city:"Ashland", state:"OR", type:"Public", category:"Safety", chance:98, size:4500, sizeBand:"Small", reputation:"Solid Regional", lat:42.1908, lng:-122.6700},
+  {name:"University of Portland", city:"Portland", state:"OR", type:"Private", category:"Safety", chance:98, size:4000, sizeBand:"Small", reputation:"Solid Regional", lat:45.5719, lng:-122.7263},
+  {name:"University of Kentucky", city:"Lexington", state:"KY", type:"Public", category:"Safety", chance:98, size:23000, sizeBand:"Large", reputation:"Strong Research", lat:38.0307, lng:-84.5040},
+  {name:"Duquesne University", city:"Pittsburgh", state:"PA", type:"Private", category:"Safety", chance:98, size:5500, sizeBand:"Medium", reputation:"Solid Regional", lat:40.4360, lng:-79.9928},
+  {name:"La Salle University", city:"Philadelphia", state:"PA", type:"Private", category:"Safety", chance:98, size:3500, sizeBand:"Small", reputation:"Solid Regional", lat:40.0381, lng:-75.1689},
+  {name:"West Virginia University", city:"Morgantown", state:"WV", type:"Public", category:"Safety", chance:98, size:21000, sizeBand:"Large", reputation:"Strong Research", lat:39.6356, lng:-79.9542},
+  {name:"University of Nevada, Reno", city:"Reno", state:"NV", type:"Public", category:"Safety", chance:97, size:17000, sizeBand:"Large", reputation:"Solid Regional", lat:39.5424, lng:-119.8147},
+  {name:"Seattle University", city:"Seattle", state:"WA", type:"Private", category:"Safety", chance:97, size:4500, sizeBand:"Small", reputation:"Solid Regional", lat:47.6101, lng:-122.3186},
+  {name:"University of Arizona", city:"Tucson", state:"AZ", type:"Public", category:"Safety", chance:97, size:36000, sizeBand:"Large", reputation:"Strong Research", lat:32.2319, lng:-110.9501},
+  {name:"Boise State University", city:"Boise", state:"ID", type:"Public", category:"Safety", chance:97, size:22000, sizeBand:"Large", reputation:"Solid Regional", lat:43.6028, lng:-116.2007},
+  {name:"Iowa State University", city:"Ames", state:"IA", type:"Public", category:"Safety", chance:97, size:25000, sizeBand:"Large", reputation:"Strong Research", lat:42.0266, lng:-93.6465},
+  {name:"Suffolk University", city:"Boston", state:"MA", type:"Private", category:"Safety", chance:97, size:5000, sizeBand:"Medium", reputation:"Solid Regional", lat:42.3589, lng:-71.0613},
+  {name:"Temple University", city:"Philadelphia", state:"PA", type:"Public", category:"Safety", chance:97, size:25000, sizeBand:"Large", reputation:"Strong Research", lat:39.9810, lng:-75.1554},
+  {name:"Marquette University", city:"Milwaukee", state:"WI", type:"Private", category:"Safety", chance:97, size:7500, sizeBand:"Medium", reputation:"Solid Regional", lat:43.0388, lng:-87.9303},
+  {name:"University of Oregon", city:"Eugene", state:"OR", type:"Public", category:"Safety", chance:96, size:20000, sizeBand:"Large", reputation:"Strong Research", lat:44.0448, lng:-123.0726},
+  {name:"University of Denver", city:"Denver", state:"CO", type:"Private", category:"Safety", chance:96, size:5800, sizeBand:"Medium", reputation:"Strong Research", lat:39.6766, lng:-104.9619},
+  {name:"Northern Arizona University", city:"Flagstaff", state:"AZ", type:"Public", category:"Safety", chance:96, size:21000, sizeBand:"Large", reputation:"Solid Regional", lat:35.1864, lng:-111.6594},
+  {name:"University of Iowa", city:"Iowa City", state:"IA", type:"Public", category:"Safety", chance:96, size:22000, sizeBand:"Large", reputation:"Strong Research", lat:41.6611, lng:-91.5302},
+  {name:"University of Kansas", city:"Lawrence", state:"KS", type:"Public", category:"Safety", chance:96, size:19500, sizeBand:"Large", reputation:"Strong Research", lat:38.9543, lng:-95.2558},
+  {name:"Drexel University", city:"Philadelphia", state:"PA", type:"Private", category:"Safety", chance:95, size:14000, sizeBand:"Large", reputation:"Strong Research", lat:39.9566, lng:-75.1899},
+  {name:"Louisiana State University", city:"Baton Rouge", state:"LA", type:"Public", category:"Safety", chance:95, size:31000, sizeBand:"Large", reputation:"Strong Research", lat:30.4133, lng:-91.1800},
+  {name:"Indiana University Bloomington", city:"Bloomington", state:"IN", type:"Public", category:"Safety", chance:95, size:34000, sizeBand:"Large", reputation:"Strong Research", lat:39.1780, lng:-86.5113},
+  {name:"Regis University", city:"Denver", state:"CO", type:"Private", category:"Safety", chance:95, size:3700, sizeBand:"Small", reputation:"Solid Regional", lat:39.7858, lng:-105.0269},
+  {name:"University of Colorado Boulder", city:"Boulder", state:"CO", type:"Public", category:"Safety", chance:95, size:30000, sizeBand:"Large", reputation:"Strong Research", lat:40.0076, lng:-105.2659},
+  {name:"University of Colorado Denver", city:"Denver", state:"CO", type:"Public", category:"Safety", chance:95, size:14000, sizeBand:"Large", reputation:"Solid Regional", lat:39.7440, lng:-105.0049},
+  {name:"Oregon State University", city:"Corvallis", state:"OR", type:"Public", category:"Safety", chance:95, size:27000, sizeBand:"Large", reputation:"Strong Research", lat:44.5645, lng:-123.2790},
+  {name:"The University of Alabama", city:"Tuscaloosa", state:"AL", type:"Public", category:"Safety", chance:95, size:33000, sizeBand:"Large", reputation:"Strong Research", lat:33.2098, lng:-87.5692},
+  {name:"College of Charleston", city:"Charleston", state:"SC", type:"Public", category:"Safety", chance:94, size:9500, sizeBand:"Medium", reputation:"Solid Regional", lat:32.7843, lng:-79.9374},
+  {name:"University of Delaware", city:"Newark", state:"DE", type:"Public", category:"Safety", chance:94, size:19000, sizeBand:"Large", reputation:"Strong Research", lat:39.6780, lng:-75.7522},
+  {name:"DePaul University", city:"Chicago", state:"IL", type:"Private", category:"Safety", chance:93, size:14000, sizeBand:"Large", reputation:"Solid Regional", lat:41.9251, lng:-87.6553},
+  {name:"James Madison University", city:"Harrisonburg", state:"VA", type:"Public", category:"Safety", chance:93, size:20000, sizeBand:"Large", reputation:"Solid Regional", lat:38.4378, lng:-78.8694},
+  {name:"Texas Tech University", city:"Lubbock", state:"TX", type:"Public", category:"Safety", chance:92, size:33000, sizeBand:"Large", reputation:"Strong Research", lat:33.5846, lng:-101.8746},
+  {name:"University of Dayton", city:"Dayton", state:"OH", type:"Private", category:"Safety", chance:92, size:8500, sizeBand:"Medium", reputation:"Solid Regional", lat:39.7406, lng:-84.1801},
+  {name:"University of New Orleans", city:"New Orleans", state:"LA", type:"Public", category:"Safety", chance:92, size:6500, sizeBand:"Medium", reputation:"Solid Regional", lat:30.0286, lng:-90.0676},
+  {name:"Bryant University", city:"Smithfield", state:"RI", type:"Private", category:"Safety", chance:91, size:3300, sizeBand:"Small", reputation:"Solid Regional", lat:41.9214, lng:-71.5436},
+  {name:"Howard University", city:"Washington", state:"DC", type:"Private", category:"Safety", chance:90, size:7000, sizeBand:"Medium", reputation:"Historic HBCU", lat:38.9220, lng:-77.0188},
+  {name:"Gonzaga University", city:"Spokane", state:"WA", type:"Private", category:"Safety", chance:89, size:5300, sizeBand:"Medium", reputation:"Solid Regional", lat:47.6678, lng:-117.4029},
+  {name:"University of Oklahoma", city:"Norman", state:"OK", type:"Public", category:"Safety", chance:88, size:22000, sizeBand:"Large", reputation:"Strong Research", lat:35.2058, lng:-97.4458},
+  {name:"Rensselaer Polytechnic Institute", city:"Troy", state:"NY", type:"Private", category:"Safety", chance:87, size:6300, sizeBand:"Medium", reputation:"Top STEM", lat:42.7298, lng:-73.6789},
+  {name:"Texas A&M University", city:"College Station", state:"TX", type:"Public", category:"Safety", chance:85, size:55000, sizeBand:"Large", reputation:"Strong Research", lat:30.6128, lng:-96.3409},
+  {name:"University of South Carolina", city:"Columbia", state:"SC", type:"Public", category:"Safety", chance:85, size:27000, sizeBand:"Large", reputation:"Strong Research", lat:33.9937, lng:-81.0299},
+  {name:"Pennsylvania State University", city:"University Park", state:"PA", type:"Public", category:"Safety", chance:83, size:40000, sizeBand:"Large", reputation:"Strong Research", lat:40.7982, lng:-77.8599},
+  {name:"Bentley University", city:"Waltham", state:"MA", type:"Private", category:"Safety", chance:81, size:4400, sizeBand:"Small", reputation:"Top Business", lat:42.3856, lng:-71.2206},
+  {name:"Providence College", city:"Providence", state:"RI", type:"Private", category:"Safety", chance:80, size:4500, sizeBand:"Small", reputation:"Solid Regional", lat:41.8438, lng:-71.4366},
+  {name:"Colorado School of Mines", city:"Golden", state:"CO", type:"Public", category:"Safety", chance:80, size:5500, sizeBand:"Medium", reputation:"Top STEM", lat:39.7510, lng:-105.2227},
+
+  // ---------- TESTS REQUIRED ----------
+  {name:"Purdue University", city:"West Lafayette", state:"IN", type:"Public", category:"Tests Required", chance:50, size:38000, sizeBand:"Large", reputation:"Strong Research", lat:40.4237, lng:-86.9212},
+  {name:"Georgia Institute of Technology", city:"Atlanta", state:"GA", type:"Public", category:"Tests Required", chance:16, size:18000, sizeBand:"Large", reputation:"Top STEM", lat:33.7756, lng:-84.3963},
+  {name:"Florida State University", city:"Tallahassee", state:"FL", type:"Public", category:"Tests Required", chance:25, size:32000, sizeBand:"Large", reputation:"Strong Research", lat:30.4419, lng:-84.2985},
+  {name:"United States Air Force Academy", city:"USAF Academy", state:"CO", type:"Public", category:"Tests Required", chance:12, size:4400, sizeBand:"Small", reputation:"Service Academy", lat:38.9983, lng:-104.8613},
+  {name:"Georgetown University", city:"Washington", state:"DC", type:"Private", category:"Tests Required", chance:12, size:7500, sizeBand:"Medium", reputation:"Elite Research", lat:38.9076, lng:-77.0723},
+  {name:"University of Georgia", city:"Athens", state:"GA", type:"Public", category:"Tests Required", chance:40, size:31000, sizeBand:"Large", reputation:"Public Ivy", lat:33.9480, lng:-83.3773},
+  {name:"Louisiana Tech University", city:"Ruston", state:"LA", type:"Public", category:"Tests Required", chance:66, size:9500, sizeBand:"Medium", reputation:"Solid Regional", lat:32.5263, lng:-92.6477},
+  {name:"University of Florida", city:"Gainesville", state:"FL", type:"Public", category:"Tests Required", chance:30, size:35000, sizeBand:"Large", reputation:"Public Ivy", lat:29.6436, lng:-82.3549},
+  {name:"University of Tennessee", city:"Knoxville", state:"TN", type:"Public", category:"Tests Required", chance:75, size:31000, sizeBand:"Large", reputation:"Strong Research", lat:35.9544, lng:-83.9295}
+];
+
+/* slug helper for image search links */
+function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'+').replace(/^\++|\++$/g,'')}
+/* build links for each school */
+function links(school){
+  const q = encodeURIComponent(school.name + ' ' + school.city + ' ' + school.state + ' campus');
+  const ytQuery = encodeURIComponent(school.name + ' campus tour');
+  return {
+    photos: `https://www.google.com/search?q=${q}&tbm=isch`,
+    map: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(school.name+' '+school.city+' '+school.state)}`,
+    youtube: `https://www.youtube.com/results?search_query=${ytQuery}`,
+    wiki: `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(school.name)}`
+  };
+}
+
+/* ---------- STATE PERSISTENCE ---------- */
+const STORE_KEY_STATUS    = 'collegeTracker:status';
+const STORE_KEY_NOTES     = 'collegeTracker:notes';
+const STORE_KEY_OVERRIDES = 'collegeTracker:overrides'; // edits to existing schools, by original name
+const STORE_KEY_CUSTOM    = 'collegeTracker:custom';    // user-added schools
+
+let statusMap   = {};
+let notesMap    = {};
+let overrides   = {}; // { originalName: {field: newValue, ...} }  — also stores the new name if renamed
+let customAdds  = []; // array of full school objects added by the user
+
+/* the live array: seed schools (with overrides applied) + custom additions */
+let colleges = [];
+function rebuildColleges(){
+  colleges = COLLEGES.map(c=>{
+    const ov = overrides[c.name];
+    return ov ? {...c, ...ov, _origName: c.name} : {...c, _origName: c.name};
+  });
+  // append user-added schools (no _origName means custom)
+  customAdds.forEach(c=> colleges.push({...c}));
+  // filter out tombstoned (deleted) seed schools
+  colleges = colleges.filter(c=> !(c._origName && deletedSeeds.has(c._origName)));
+}
+let deletedSeeds = new Set();
+/* initial sync build with empty overrides — async hydration will rebuild */
+function _initColleges(){ rebuildColleges(); }
+_initColleges();
+
+async function loadJSONAsync(key){
+  try{
+    const r = await window.storage.get(key);
+    if(r && r.value) return JSON.parse(r.value);
+  }catch(e){}
+  return null;
+}
+async function saveJSONAsync(key, val){
+  try{ await window.storage.set(key, JSON.stringify(val)); }catch(e){}
+}
+function loadJSON(key){ /* sync init - falls back to memory until async loads */ return null; }
+
+/* hydrate from persistent storage on load */
+(async ()=>{
+  const s = await loadJSONAsync(STORE_KEY_STATUS);
+  const n = await loadJSONAsync(STORE_KEY_NOTES);
+  const o = await loadJSONAsync(STORE_KEY_OVERRIDES);
+  const cu = await loadJSONAsync(STORE_KEY_CUSTOM);
+  if(s){ statusMap = s; }
+  if(n){ notesMap = n; }
+  if(o){
+    overrides = o.overrides || {};
+    deletedSeeds = new Set(o.deleted || []);
+  }
+  if(cu){ customAdds = cu; }
+  rebuildColleges();
+  // refresh state filter dropdown to include custom states
+  refreshStateMenu();
+  render();
+  renderStats();
+})();
+
+function persistStatus(){ saveJSONAsync(STORE_KEY_STATUS, statusMap); }
+function persistNotes(){ saveJSONAsync(STORE_KEY_NOTES, notesMap); }
+function persistOverrides(){ saveJSONAsync(STORE_KEY_OVERRIDES, {overrides, deleted:[...deletedSeeds]}); }
+function persistCustom(){ saveJSONAsync(STORE_KEY_CUSTOM, customAdds); }
+
+/* ---------- STATUS OPTIONS ---------- */
+const STATUSES = [
+  {v:'not',         label:'Not Started'},
+  {v:'considering', label:'Considering'},
+  {v:'applying',    label:'Applying'},
+  {v:'applied',     label:'Applied'},
+  {v:'accepted',    label:'Accepted'},
+  {v:'waitlist',    label:'Waitlisted'},
+  {v:'rejected',    label:'Rejected'},
+  {v:'attending',   label:'Attending'},
+];
+
+/* ---------- DERIVED FILTERS ---------- */
+function uniqueStates(){
+  return [...new Set(colleges.map(c=>c.state))].sort();
+}
+
+/* ---------- RENDERING ---------- */
+let sortKey = 'chance';
+let sortDir = 'desc';
+let currentList = [];
+
+/* multi-select state: each filter holds a Set of selected values */
+const msState = {
+  category: new Set(),
+  status:   new Set(),
+  type:     new Set(),
+  state:    new Set(),
+  size:     new Set(),
+};
+
+function getFilters(){
+  return {
+    q: document.getElementById('search').value.trim().toLowerCase(),
+    cat:   msState.category,
+    stat:  msState.status,
+    type:  msState.type,
+    state: msState.state,
+    size:  msState.size,
+  };
+}
+
+function applyFilters(list){
+  const f = getFilters();
+  return list.filter(c=>{
+    if(f.q){
+      const hay = (c.name+' '+c.city+' '+c.state+' '+c.reputation).toLowerCase();
+      if(!hay.includes(f.q)) return false;
+    }
+    if(f.cat.size   && !f.cat.has(c.category))   return false;
+    if(f.type.size  && !f.type.has(c.type))      return false;
+    if(f.state.size && !f.state.has(c.state))    return false;
+    if(f.size.size  && !f.size.has(c.sizeBand))  return false;
+    if(f.stat.size){
+      const cur = statusMap[c.name] || 'not';
+      if(!f.stat.has(cur)) return false;
+    }
+    return true;
+  });
+}
+
+function applySort(list){
+  const dirMul = sortDir === 'asc' ? 1 : -1;
+  return [...list].sort((a,b)=>{
+    let va = a[sortKey], vb = b[sortKey];
+    if(sortKey === 'state') vb = b.state, va = a.state;
+    if(typeof va === 'string') return va.localeCompare(vb) * dirMul;
+    return (va - vb) * dirMul;
+  });
+}
+
+function renderTable(){
+  const tbody = document.getElementById('collegeBody');
+  tbody.innerHTML = '';
+  currentList.forEach(c=>{
+    const status = statusMap[c.name] || 'not';
+    const note = notesMap[c.name] || '';
+    const lk = links(c);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <a class="school-name" data-name="${c.name}">${c.name}</a>
+        <div class="school-sub">${c.city}, ${c.state}</div>
+      </td>
+      <td><span class="badge ${c.category.toLowerCase().split(' ')[0]}">${c.category}</span></td>
+      <td>
+        <div class="chance-num">${c.chance}%</div>
+        <div class="chance-bar"><div class="chance-bar-fill" style="width:${c.chance}%"></div></div>
+      </td>
+      <td>${c.city}, ${c.state}</td>
+      <td><span class="badge ${c.type.toLowerCase()}">${c.type}</span></td>
+      <td>${c.sizeBand}<div class="school-sub">~${c.size.toLocaleString()}</div></td>
+      <td>${c.reputation}</td>
+      <td>
+        <select class="status-select s-${status}" data-name="${c.name}">
+          ${STATUSES.map(s=>`<option value="${s.v}" ${status===s.v?'selected':''}>${s.label}</option>`).join('')}
+        </select>
+      </td>
+      <td class="notes-cell">
+        <textarea class="notes-input" data-name="${c.name}" placeholder="Visit dates, deadlines, what you liked…">${note}</textarea>
+      </td>
+      <td>
+        <div class="link-row">
+          <a class="icon-link" href="${lk.photos}" target="_blank" rel="noopener">📷 Campus Photos</a>
+          <a class="icon-link" href="${lk.youtube}" target="_blank" rel="noopener">▶ YouTube Tour</a>
+          <a class="icon-link" href="${lk.map}" target="_blank" rel="noopener">📍 Maps</a>
+          <a class="icon-link" href="${lk.wiki}" target="_blank" rel="noopener">ℹ︎ More Info</a>
+        </div>
+      </td>
+      <td>
+        <div class="row-actions">
+          <button class="row-btn edit-btn" data-name="${c.name}" title="Edit school">✏</button>
+          <button class="row-btn del-btn" data-name="${c.name}" title="Delete school">✕</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // sort header indicators
+  document.querySelectorAll('th[data-sort]').forEach(th=>{
+    th.classList.toggle('sorted', th.dataset.sort === sortKey);
+    const arrow = th.querySelector('.sort-arrow');
+    if(th.dataset.sort === sortKey) arrow.textContent = sortDir === 'asc' ? '↑' : '↓';
+    else arrow.textContent = '↕';
+  });
+
+  document.getElementById('resultCount').textContent =
+    `Showing ${currentList.length} of ${colleges.length} schools`;
+}
+
+function renderStats(){
+  const counts = {total: colleges.length, considering:0, applying:0, accepted:0, rejected:0, waitlist:0};
+  colleges.forEach(c=>{
+    const s = statusMap[c.name] || 'not';
+    if(s === 'considering') counts.considering++;
+    if(s === 'applying' || s === 'applied') counts.applying++;
+    if(s === 'accepted' || s === 'attending') counts.accepted++;
+    if(s === 'rejected') counts.rejected++;
+    if(s === 'waitlist') counts.waitlist++;
+  });
+  document.getElementById('stTotal').textContent = counts.total;
+  document.getElementById('stConsidering').textContent = counts.considering;
+  document.getElementById('stApplying').textContent = counts.applying;
+  document.getElementById('stAccepted').textContent = counts.accepted;
+  document.getElementById('stRejected').textContent = counts.rejected;
+  document.getElementById('stWaitlist').textContent = counts.waitlist;
+}
+
+function renderKanban(){
+  const board = document.getElementById('kanbanBoard');
+  const cols = [
+    {key:'considering', title:'Considering', match:s=>s==='considering' || s==='not'},
+    {key:'applying',    title:'Applying / Applied', match:s=>s==='applying' || s==='applied'},
+    {key:'decisions',   title:'Decisions In', match:s=>s==='accepted' || s==='waitlist' || s==='rejected'},
+    {key:'attending',   title:'Attending', match:s=>s==='attending'},
+  ];
+  board.innerHTML = '';
+  cols.forEach(col=>{
+    const items = currentList.filter(c=>{
+      const s = statusMap[c.name] || 'not';
+      // Don't show "not started" in considering by default — only those marked considering
+      if(col.key === 'considering') return s === 'considering';
+      return col.match(s);
+    });
+    const colEl = document.createElement('div');
+    colEl.className = 'kanban-col';
+    colEl.innerHTML = `
+      <div class="kanban-head">
+        <span>${col.title}</span><span class="count">${items.length}</span>
+      </div>
+      <div class="kanban-body">
+        ${items.length === 0 ? '<div class="k-empty">— empty —</div>' : items.map(c=>{
+          const s = statusMap[c.name] || 'not';
+          return `<div class="k-card" data-name="${c.name}">
+            <div class="k-name">${c.name}</div>
+            <div class="k-meta">
+              <span>${c.city}, ${c.state}</span>
+              <span>·</span>
+              <span style="color:var(--accent)">${c.chance}%</span>
+              <span>·</span>
+              <span>${c.category}</span>
+              ${col.key==='decisions' ? `<span>·</span><span style="color:var(--${s==='accepted'?'accepted':s==='rejected'?'rejected':'waitlist'});font-weight:700">${s.toUpperCase()}</span>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+    board.appendChild(colEl);
+  });
+}
+
+/* ---------- MAP ---------- */
+let map, markerLayer;
+function initMap(){
+  try{
+    map = L.map('map', {scrollWheelZoom:true}).setView([39.5, -96], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'&copy; OpenStreetMap',
+      maxZoom:18
+    }).addTo(map);
+    markerLayer = L.layerGroup().addTo(map);
+    renderMap();
+    // ensure tiles lay out correctly once the container is visible
+    setTimeout(()=>{ if(map) map.invalidateSize(); }, 120);
+  }catch(err){
+    console.error('Map init failed:', err);
+  }
+}
+function pinClass(c){
+  const status = statusMap[c.name] || 'not';
+  if(status === 'accepted' || status === 'attending') return 'accepted';
+  if(status === 'applying' || status === 'applied') return 'applying';
+  return (c.category || 'reach').toLowerCase().split(' ')[0]; // reach/target/safety/tests
+}
+function pinLabel(c){
+  return c.chance + '';
+}
+function renderMap(){
+  if(!map) return;
+  markerLayer.clearLayers();
+  currentList.forEach(c=>{
+    // skip records without valid numeric coordinates so one bad row can't break the map
+    const lat = Number(c.lat), lng = Number(c.lng);
+    if(!isFinite(lat) || !isFinite(lng)) return;
+    const cls = pinClass(c);
+    const icon = L.divIcon({
+      className:'',
+      html:`<div class="map-pin ${cls}">${pinLabel(c)}</div>`,
+      iconSize:[26,26],
+      iconAnchor:[13,13]
+    });
+    const m = L.marker([lat, lng], {icon}).addTo(markerLayer);
+    const lk = links(c);
+    const status = statusMap[c.name] || 'not';
+    const statusObj = STATUSES.find(s=>s.v===status);
+    const statusLabel = statusObj ? statusObj.label : 'Not Started';
+    const sizeText = (typeof c.size === 'number' && c.size > 0) ? ` (~${c.size.toLocaleString()})` : '';
+    m.bindPopup(`
+      <div class="popup-name">${c.name}</div>
+      <div class="popup-loc">${c.city}, ${c.state}</div>
+      <div class="popup-row"><span class="lbl">Category</span><span>${c.category||'—'}</span></div>
+      <div class="popup-row"><span class="lbl">Chance</span><span>${c.chance}%</span></div>
+      <div class="popup-row"><span class="lbl">Type</span><span>${c.type||'—'}</span></div>
+      <div class="popup-row"><span class="lbl">Size</span><span>${c.sizeBand||'—'}${sizeText}</span></div>
+      <div class="popup-row"><span class="lbl">Reputation</span><span>${c.reputation||'—'}</span></div>
+      <div class="popup-row"><span class="lbl">Status</span><span style="font-weight:700">${statusLabel}</span></div>
+      <div class="popup-actions">
+        <a href="${lk.photos}" target="_blank" rel="noopener">📷 Photos</a>
+        <a href="${lk.youtube}" target="_blank" rel="noopener">▶ YouTube</a>
+        <a href="${lk.map}" target="_blank" rel="noopener">📍 Maps</a>
+        <a href="#" class="open-detail-link" data-name="${c.name}">⊕ Details</a>
+      </div>
+    `);
+  });
+}
+
+/* ---------- MODAL ---------- */
+function openDetail(name){
+  const c = colleges.find(x=>x.name === name);
+  if(!c) return;
+  document.getElementById('mName').textContent = c.name;
+  document.getElementById('mLoc').textContent = `${c.city}, ${c.state}`;
+  document.getElementById('mCat').textContent = c.category;
+  document.getElementById('mChance').textContent = c.chance + '%';
+  document.getElementById('mType').textContent = c.type;
+  document.getElementById('mSize').textContent = `${c.sizeBand} (~${c.size.toLocaleString()})`;
+  document.getElementById('mRep').textContent = c.reputation;
+  const status = statusMap[c.name] || 'not';
+  document.getElementById('mStat').textContent = STATUSES.find(s=>s.v===status).label;
+  document.getElementById('mNotes').value = notesMap[c.name] || '';
+  document.getElementById('mNotes').dataset.name = c.name;
+  const lk = links(c);
+  document.getElementById('mActions').innerHTML = `
+    <a href="${lk.photos}" target="_blank" rel="noopener">📷 Campus Photos</a>
+    <a href="${lk.youtube}" target="_blank" rel="noopener" class="alt">▶ YouTube Tour</a>
+    <a href="${lk.map}" target="_blank" rel="noopener" class="alt">📍 Google Maps</a>
+    <a href="${lk.wiki}" target="_blank" rel="noopener" class="alt">ℹ︎ Wikipedia</a>
+  `;
+  document.getElementById('modal').classList.add('open');
+}
+function closeDetail(){
+  document.getElementById('modal').classList.remove('open');
+  document.getElementById('modalEl').classList.remove('editing');
+}
+
+/* ---------- ADD / EDIT / DELETE ---------- */
+let currentEditName = null; // name of school being edited; null = adding new
+
+function openEdit(name){
+  currentEditName = name;
+  const c = name ? colleges.find(x=>x.name === name) : null;
+  document.getElementById('mEditTitle').textContent = c ? `Edit: ${c.name}` : 'Add a New School';
+  // populate fields
+  document.getElementById('eName').value       = c ? c.name : '';
+  document.getElementById('eCity').value       = c ? c.city : '';
+  document.getElementById('eState').value      = c ? c.state : '';
+  document.getElementById('eCategory').value   = c ? c.category : 'Reach';
+  document.getElementById('eChance').value     = c ? c.chance : '';
+  document.getElementById('eType').value       = c ? c.type : 'Private';
+  document.getElementById('eSize').value       = c ? c.size : '';
+  document.getElementById('eReputation').value = c ? c.reputation : '';
+  document.getElementById('eLat').value        = c ? c.lat : '';
+  document.getElementById('eLng').value        = c ? c.lng : '';
+  // open modal in edit mode
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('modalEl').classList.add('editing');
+}
+
+function saveEdit(){
+  const name       = document.getElementById('eName').value.trim();
+  const city       = document.getElementById('eCity').value.trim();
+  const state      = document.getElementById('eState').value.trim().toUpperCase();
+  const category   = document.getElementById('eCategory').value;
+  const chance     = parseInt(document.getElementById('eChance').value, 10);
+  const type       = document.getElementById('eType').value;
+  const size       = parseInt(document.getElementById('eSize').value, 10) || 0;
+  const reputation = document.getElementById('eReputation').value.trim() || '—';
+  const lat        = parseFloat(document.getElementById('eLat').value) || 39.5;
+  const lng        = parseFloat(document.getElementById('eLng').value) || -96;
+
+  if(!name){ alert('School name is required.'); return; }
+  if(!city || !state){ alert('City and state are required.'); return; }
+  if(isNaN(chance) || chance < 0 || chance > 100){ alert('Chance must be a number 0–100.'); return; }
+
+  // determine size band
+  let sizeBand = 'Medium';
+  if(size && size < 5000) sizeBand = 'Small';
+  else if(size && size > 15000) sizeBand = 'Large';
+
+  const newData = {name, city, state, category, chance, type, size, sizeBand, reputation, lat, lng};
+
+  // duplicate-name check (only when name changed)
+  const oldName = currentEditName;
+  if(name !== oldName){
+    if(colleges.some(c=>c.name === name && c._origName !== oldName)){
+      alert('A school with this name already exists.'); return;
+    }
+  }
+
+  if(oldName === null){
+    // ADDING NEW custom school
+    customAdds.push(newData);
+    persistCustom();
+  } else {
+    // EDITING existing school
+    const target = colleges.find(c=>c.name === oldName);
+    const isSeed = target && target._origName && COLLEGES.some(s=>s.name === target._origName);
+    if(isSeed){
+      // store as override keyed by original (seed) name
+      overrides[target._origName] = newData;
+      persistOverrides();
+    } else {
+      // it's a custom-added school; replace it in customAdds
+      const idx = customAdds.findIndex(c=>c.name === oldName);
+      if(idx >= 0){ customAdds[idx] = newData; persistCustom(); }
+    }
+    // migrate status & notes if name changed
+    if(name !== oldName){
+      if(statusMap[oldName] !== undefined){ statusMap[name] = statusMap[oldName]; delete statusMap[oldName]; persistStatus(); }
+      if(notesMap[oldName]  !== undefined){ notesMap[name]  = notesMap[oldName];  delete notesMap[oldName];  persistNotes(); }
+    }
+  }
+
+  rebuildColleges();
+  refreshStateMenu();
+  closeDetail();
+  render();
+  renderStats();
+}
+
+function deleteSchool(name){
+  if(!confirm(`Delete "${name}" from your tracker? This can't be undone (but you can re-add it manually).`)) return;
+  const target = colleges.find(c=>c.name === name);
+  if(!target) return;
+  const isSeed = target._origName && COLLEGES.some(s=>s.name === target._origName);
+  if(isSeed){
+    deletedSeeds.add(target._origName);
+    delete overrides[target._origName];
+    persistOverrides();
+  } else {
+    const idx = customAdds.findIndex(c=>c.name === name);
+    if(idx >= 0){ customAdds.splice(idx,1); persistCustom(); }
+  }
+  // clean up status & notes
+  if(statusMap[name] !== undefined){ delete statusMap[name]; persistStatus(); }
+  if(notesMap[name]  !== undefined){ delete notesMap[name];  persistNotes(); }
+  rebuildColleges();
+  refreshStateMenu();
+  render();
+  renderStats();
+}
+
+/* refresh state filter dropdown when states change (custom additions) */
+function refreshStateMenu(){
+  const stateMenu = document.getElementById('stateMenu');
+  if(!stateMenu) return;
+  const previouslyChecked = new Set(msState.state);
+  stateMenu.innerHTML = '';
+  uniqueStates().forEach(st=>{
+    const div = document.createElement('div');
+    div.className = 'ms-opt';
+    div.dataset.val = st;
+    const isChecked = previouslyChecked.has(st);
+    if(isChecked) div.classList.add('checked');
+    div.innerHTML = `<input type="checkbox" ${isChecked?'checked':''}> ${st}`;
+    stateMenu.appendChild(div);
+  });
+  // remove any selected states that no longer exist
+  [...msState.state].forEach(s=>{ if(!uniqueStates().includes(s)) msState.state.delete(s); });
+  const msEl = document.querySelector('.ms[data-filter="state"]');
+  if(msEl){
+    const valEl = msEl.querySelector('.ms-val');
+    if(msState.state.size === 0){ valEl.textContent='All'; valEl.classList.remove('active'); }
+    else if(msState.state.size <= 2){ valEl.textContent=[...msState.state].join(', '); valEl.classList.add('active'); }
+    else{ valEl.textContent=`${msState.state.size} selected`; valEl.classList.add('active'); }
+  }
+}
+
+/* ---------- MASTER RENDER ---------- */
+function render(){
+  currentList = applySort(applyFilters(colleges));
+  renderTable();
+  renderKanban();
+  renderMap();
+  renderStats();
+}
+
+/* ---------- EVENT WIRING ---------- */
+document.addEventListener('DOMContentLoaded', ()=>{
+  // date stamp
+  const d = new Date();
+  document.getElementById('dateStamp').textContent = d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  // populate state filter (multi-select)
+  refreshStateMenu();
+
+  // multi-select dropdown wiring
+  function updateMsButton(msEl){
+    const filter = msEl.dataset.filter;
+    const set = msState[filter];
+    const valEl = msEl.querySelector('.ms-val');
+    if(set.size === 0){
+      valEl.textContent = 'All';
+      valEl.classList.remove('active');
+    } else if(set.size <= 2){
+      valEl.textContent = [...set].join(', ');
+      valEl.classList.add('active');
+    } else {
+      valEl.textContent = `${set.size} selected`;
+      valEl.classList.add('active');
+    }
+  }
+  document.querySelectorAll('.ms').forEach(msEl=>{
+    const btn = msEl.querySelector('.ms-btn');
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      // close others
+      document.querySelectorAll('.ms.open').forEach(o=>{ if(o !== msEl) o.classList.remove('open') });
+      msEl.classList.toggle('open');
+    });
+    msEl.querySelector('.ms-menu').addEventListener('click', (e)=>{
+      const opt = e.target.closest('.ms-opt');
+      if(!opt) return;
+      e.stopPropagation();
+      const filter = msEl.dataset.filter;
+      const val = opt.dataset.val;
+      const set = msState[filter];
+      const cb = opt.querySelector('input[type="checkbox"]');
+      if(set.has(val)){
+        set.delete(val);
+        cb.checked = false;
+        opt.classList.remove('checked');
+      } else {
+        set.add(val);
+        cb.checked = true;
+        opt.classList.add('checked');
+      }
+      updateMsButton(msEl);
+      render();
+    });
+  });
+  // close dropdowns when clicking outside
+  document.addEventListener('click', ()=>{
+    document.querySelectorAll('.ms.open').forEach(o=>o.classList.remove('open'));
+  });
+
+  // search
+  document.getElementById('search').addEventListener('input', render);
+
+  document.getElementById('resetFiltersBtn').addEventListener('click', ()=>{
+    document.getElementById('search').value = '';
+    Object.keys(msState).forEach(k=>msState[k].clear());
+    document.querySelectorAll('.ms-opt').forEach(o=>{
+      o.classList.remove('checked');
+      const cb = o.querySelector('input[type="checkbox"]');
+      if(cb) cb.checked = false;
+    });
+    document.querySelectorAll('.ms').forEach(updateMsButton);
+    render();
+  });
+
+  // tabs
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      const view = tab.dataset.view;
+      document.getElementById('view-'+view).classList.add('active');
+      if(view === 'map'){
+        if(!map){
+          // defer so the container has dimensions before Leaflet initializes
+          setTimeout(()=>{ initMap(); }, 60);
+        } else {
+          setTimeout(()=>{ map.invalidateSize(); renderMap(); }, 100);
+        }
+      }
+    });
+  });
+
+  // sortable headers
+  document.querySelectorAll('th[data-sort]').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const k = th.dataset.sort;
+      if(sortKey === k) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      else { sortKey = k; sortDir = (k === 'name' || k === 'state') ? 'asc' : 'desc'; }
+      render();
+    });
+  });
+
+  // delegated: status change, notes input, school name click, kanban card click
+  document.body.addEventListener('change', (e)=>{
+    if(e.target.matches('.status-select')){
+      statusMap[e.target.dataset.name] = e.target.value;
+      // update select class
+      e.target.className = 'status-select s-' + e.target.value;
+      persistStatus();
+      renderStats();
+      renderKanban();
+      renderMap();
+    }
+  });
+  document.body.addEventListener('input', (e)=>{
+    if(e.target.matches('.notes-input')){
+      notesMap[e.target.dataset.name] = e.target.value;
+      persistNotes();
+    }
+    if(e.target.id === 'mNotes'){
+      const nm = e.target.dataset.name;
+      notesMap[nm] = e.target.value;
+      persistNotes();
+      // sync to inline notes input if visible
+      const inline = document.querySelector(`.notes-input[data-name="${CSS.escape(nm)}"]`);
+      if(inline) inline.value = e.target.value;
+    }
+  });
+  document.body.addEventListener('click', (e)=>{
+    // edit / delete row buttons
+    const editBtn = e.target.closest('.edit-btn');
+    if(editBtn){ openEdit(editBtn.dataset.name); return; }
+    const delBtn = e.target.closest('.del-btn');
+    if(delBtn){ deleteSchool(delBtn.dataset.name); return; }
+
+    const a = e.target.closest('.school-name');
+    if(a){ e.preventDefault(); openDetail(a.dataset.name); return; }
+    const k = e.target.closest('.k-card');
+    if(k){ openDetail(k.dataset.name); return; }
+    const link = e.target.closest('.open-detail-link');
+    if(link){ e.preventDefault(); openDetail(link.dataset.name); return; }
+  });
+  document.getElementById('modalClose').addEventListener('click', closeDetail);
+  document.getElementById('modal').addEventListener('click', (e)=>{
+    if(e.target.id === 'modal') closeDetail();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape') closeDetail();
+  });
+
+  // ADD / EDIT / SAVE / CANCEL handlers
+  document.getElementById('addBtn').addEventListener('click', ()=> openEdit(null));
+  document.getElementById('editFromViewBtn').addEventListener('click', ()=>{
+    // switch the open modal from view to edit, preserving which school
+    const name = document.getElementById('mNotes').dataset.name;
+    if(name) openEdit(name);
+  });
+  document.getElementById('editCancelBtn').addEventListener('click', closeDetail);
+  document.getElementById('editSaveBtn').addEventListener('click', saveEdit);
+
+  // export
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const data = colleges.map(c=>({
+      ...c,
+      status: statusMap[c.name] || 'not',
+      notes: notesMap[c.name] || ''
+    }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'college-tracker-export.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // reset
+  document.getElementById('resetAllBtn').addEventListener('click', ()=>{
+    if(!confirm('This will clear ALL your data: status selections, notes, custom-added schools, and edits to existing schools. Continue?')) return;
+    statusMap = {}; notesMap = {}; overrides = {}; customAdds = []; deletedSeeds = new Set();
+    persistStatus(); persistNotes(); persistOverrides(); persistCustom();
+    rebuildColleges();
+    refreshStateMenu();
+    render();
+    renderStats();
+  });
+
+  render();
+});
+</script>
+</body>
+</html>
